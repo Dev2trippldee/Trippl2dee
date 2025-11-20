@@ -1,0 +1,8 @@
+- [ ] Integrate auth page
+- [ ] use the `use` hook in client components
+- [ ] Make the FileUpload Input into a component
+- [x] Time Format in Operating Hours
+- [x] BMI component
+- [x] Make left and right sidebar fixed
+- [x] Branch - data in Home page
+- [x] Logo File

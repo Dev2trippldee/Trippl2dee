@@ -1,0 +1,87 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import "tailwindcss";
+
+.center-div {
+    @apply grid place-items-center;
+}
+
+@theme {
+    --color-brand: #fd5f08;
+    --color-brand-bg-100: #fff9f2;
+    --color-brand-bg-200: #ffedd8;
+    --color-brand-white: #ffffff;
+
+    /* Shadow */
+    --color-brand-shadow: #ffead2;
+
+    /* Font */
+    --font-fira: "Fira Sans", sans-serif;
+    --font-inter: "Inter", sans-serif;
+}
+
+.react-international-phone-country-selector {
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px 0px 0px 12px;
+}
+
+.react-international-phone-country-selector-button {
+    /*border: none !important;*/
+    padding: 2px !important;
+    border-radius: 5px !important;
+    height: 100% !important;
+    /* background: black !important; */
+}
+.react-international-phone-country-selector-button__button-content {
+    border: none;
+}
+
+/* Hide scrollbars but allow scrolling */
+.scrollbar-hide::-webkit-scrollbar {
+    display: hidden;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none; /* for Internet Explorer, Edge */
+    scrollbar-width: none; /* for Firefox */
+}
+
+/* Orange scrollbar styling */
+.scrollbar-orange::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.scrollbar-orange::-webkit-scrollbar-track {
+    background: #fff9f2;
+    border-radius: 10px;
+}
+
+.scrollbar-orange::-webkit-scrollbar-thumb {
+    background: #fd5f08;
+    border-radius: 10px;
+}
+
+.scrollbar-orange::-webkit-scrollbar-thumb:hover {
+    background: #e55507;
+}
+
+.scrollbar-orange {
+    scrollbar-width: thin; /* for Firefox */
+    scrollbar-color: #fd5f08 #fff9f2; /* thumb and track color for Firefox */
+}
+
+/* Mobile responsive phone input */
+@media (max-width: 768px) {
+    .react-international-phone-input {
+        height: 38px !important;
+        font-size: 0.875rem !important;
+    }
+    
+    .react-international-phone-country-selector {
+        height: 38px !important;
+    }
+}
