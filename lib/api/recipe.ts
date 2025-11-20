@@ -416,6 +416,17 @@ export interface FoodCategory {
 }
 
 /**
+ * Recipe Category interface
+ */
+export interface RecipeCategory {
+  id: number;
+  name: string;
+  alias: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
  * Get all cuisines
  */
 export async function getCuisines(
@@ -475,6 +486,38 @@ export async function getFoodCategories(
   } catch (err) {
     console.error("[API:getFoodCategories] Error occurred:", err);
     const errorResponse = handleApiError<FoodCategory[]>(err);
+    return errorResponse;
+  }
+}
+
+/**
+ * Get all recipe categories
+ */
+export async function getRecipeCategories(
+  token: string
+): Promise<ApiResponse<RecipeCategory[]>> {
+  try {
+    const response = await axios.get<{
+      status: boolean;
+      message?: string;
+      data: RecipeCategory[];
+      statusCode: number;
+    }>(API_ENDPOINTS.RECIPE.GET_RECIPE_CATEGORIES, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return {
+      success: response.data.status || true,
+      data: response.data.data || [],
+      message: response.data.message || "Recipe categories fetched successfully",
+    };
+  } catch (err) {
+    console.error("[API:getRecipeCategories] Error occurred:", err);
+    const errorResponse = handleApiError<RecipeCategory[]>(err);
     return errorResponse;
   }
 }

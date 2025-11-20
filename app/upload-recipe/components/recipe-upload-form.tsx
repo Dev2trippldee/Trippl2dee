@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Image as ImageIcon, Video, Upload as UploadIcon, Plus, Minus, Trash2, Loader2, ArrowUp } from "lucide-react";
 import toast from "react-hot-toast";
-import { createOrUpdateRecipe, getCuisines, getFoodCategories, getFoodTypes, type Cuisine, type FoodCategory, type FoodType } from "@/lib/api/recipe";
+import { createOrUpdateRecipe, getCuisines, getFoodCategories, getFoodTypes, getRecipeCategories, type Cuisine, type FoodCategory, type FoodType, type RecipeCategory } from "@/lib/api/recipe";
 import { getPrivacyOptions } from "@/lib/api/post";
 import type { PrivacyOption } from "@/types/post";
 import type { Ingredient, Step, CreateRecipeData, RecipeResponse } from "@/types/recipe";
@@ -51,9 +51,11 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
   const [foodCategories, setFoodCategories] = useState<FoodCategory[]>([]);
   const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
+  const [recipeCategories, setRecipeCategories] = useState<RecipeCategory[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState<string>("");
   const [selectedFoodCategory, setSelectedFoodCategory] = useState<string>("");
   const [selectedFoodType, setSelectedFoodType] = useState<string>("");
+  const [selectedRecipeCategory, setSelectedRecipeCategory] = useState<string>("");
   const [isLoadingFoodTypes, setIsLoadingFoodTypes] = useState<boolean>(false);
 
   // Privacy and location
@@ -84,6 +86,7 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
     fetchPrivacyOptions();
     fetchCuisines();
     fetchFoodCategories();
+    fetchRecipeCategories();
     handleGetLocation(false);
   }, []);
 
@@ -121,6 +124,17 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
       }
     } catch (error) {
       console.error("[RecipeUploadForm] Error fetching food categories:", error);
+    }
+  };
+
+  const fetchRecipeCategories = async () => {
+    try {
+      const response = await getRecipeCategories(token);
+      if (response.success && response.data) {
+        setRecipeCategories(response.data);
+      }
+    } catch (error) {
+      console.error("[RecipeUploadForm] Error fetching recipe categories:", error);
     }
   };
 
@@ -171,6 +185,17 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
       setFoodTypeAlias(foodType.alias);
     } else {
       setFoodTypeAlias("");
+    }
+  };
+
+  const handleRecipeCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedRecipeCategoryName = e.target.value;
+    setSelectedRecipeCategory(selectedRecipeCategoryName);
+    const recipeCategory = recipeCategories.find((rc) => rc.name === selectedRecipeCategoryName);
+    if (recipeCategory) {
+      setRecipeCategoryAlias(recipeCategory.alias);
+    } else {
+      setRecipeCategoryAlias("");
     }
   };
 
@@ -427,8 +452,8 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
     }
 
     // Recipe Category Alias
-    if (!recipeCategoryAlias.trim()) {
-      newErrors.recipeCategoryAlias = "Recipe category alias is required";
+    if (!selectedRecipeCategory || !recipeCategoryAlias.trim()) {
+      newErrors.recipeCategoryAlias = "Recipe category is required";
     }
 
     // Food Type
@@ -648,7 +673,7 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Food Category <span className="text-red-500">*</span>
+                Category <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedFoodCategory}
@@ -671,20 +696,28 @@ export function RecipeUploadForm({ token }: RecipeUploadFormProps) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Recipe Category Alias <span className="text-red-500">*</span>
+                Food Category<span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={recipeCategoryAlias}
+              <select
+                value={selectedRecipeCategory}
                 onChange={(e) => {
-                  setRecipeCategoryAlias(e.target.value);
+                  handleRecipeCategoryChange(e);
                   if (errors.recipeCategoryAlias) setErrors(prev => ({ ...prev, recipeCategoryAlias: "" }));
                 }}
-                placeholder="e.g., proteins"
                 className={`w-full p-3 text-base border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none transition bg-[#FFF8F3] ${
                   errors.recipeCategoryAlias ? "border-red-500" : "border-gray-200"
                 }`}
-              />
+              >
+                <option value="">Select recipe category</option>
+                {recipeCategories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {recipeCategoryAlias && (
+                <p className="mt-1 text-xs text-gray-500">Alias: {recipeCategoryAlias}</p>
+              )}
               {errors.recipeCategoryAlias && <p className="text-red-500 text-sm mt-1">{errors.recipeCategoryAlias}</p>}
             </div>
             <div>

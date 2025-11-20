@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     DELETE: `${API_BASE}/recipe/delete/recipe`,
     GET_CUISINES: `${API_BASE}/get-cuisines`,
     GET_FOOD_CATEGORIES: `${API_BASE}/get-food-categories`,
+    GET_RECIPE_CATEGORIES: `${API_BASE}/recipe/recipe-categories`,
     GET_FOOD_TYPES: `${API_BASE}/recipe/recipe-food-types`,
     REPORT: `${API_BASE}/recipe/report`,
     TOGGLE_SAVE: `${API_BASE}/recipe/toggle-save`,

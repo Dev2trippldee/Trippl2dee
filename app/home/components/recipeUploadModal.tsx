@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, ChevronLeft, MapPin, Image as ImageIcon, Video, FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { createOrUpdateRecipe, getCuisines, getFoodCategories, getFoodTypes, type Cuisine, type FoodCategory, type FoodType } from "@/lib/api/recipe";
+import { createOrUpdateRecipe, getCuisines, getFoodCategories, getFoodTypes, getRecipeCategories, type Cuisine, type FoodCategory, type FoodType, type RecipeCategory } from "@/lib/api/recipe";
 import { getPrivacyOptions } from "@/lib/api/post";
 import type { PrivacyOption } from "@/types/post";
 import type { Ingredient, Step, CreateRecipeData, RecipeResponse } from "@/types/recipe";
@@ -36,9 +36,11 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
   const [foodCategories, setFoodCategories] = useState<FoodCategory[]>([]);
   const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
+  const [recipeCategories, setRecipeCategories] = useState<RecipeCategory[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState<string>("");
   const [selectedFoodCategory, setSelectedFoodCategory] = useState<string>("");
   const [selectedFoodType, setSelectedFoodType] = useState<string>("");
+  const [selectedRecipeCategory, setSelectedRecipeCategory] = useState<string>("");
   const [isLoadingFoodTypes, setIsLoadingFoodTypes] = useState<boolean>(false);
   
   // Recipe form fields
@@ -56,7 +58,7 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch privacy options, cuisines, and food categories when modal opens
+  // Fetch privacy options, cuisines, food categories, and recipe categories when modal opens
   useEffect(() => {
     if (isOpen) {
       if (privacyOptions.length === 0) {
@@ -68,13 +70,16 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
       if (foodCategories.length === 0) {
         fetchFoodCategories();
       }
+      if (recipeCategories.length === 0) {
+        fetchRecipeCategories();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Load initial recipe data when modal opens with initialRecipe
   useEffect(() => {
-    if (isOpen && initialRecipe && foodCategories.length > 0 && cuisines.length > 0) {
+    if (isOpen && initialRecipe && foodCategories.length > 0 && cuisines.length > 0 && recipeCategories.length > 0) {
       // API response uses "alias" field, fallback to "recipe_alias" for compatibility
       const recipeAlias = initialRecipe.alias || initialRecipe.recipe_alias;
       console.log("[RecipeUploadModal] Loading recipe for editing. Recipe alias:", recipeAlias);
@@ -138,9 +143,13 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
         }
       }
 
-      // Load recipe category - need to find alias (assuming it's the same as category for now)
+      // Load recipe category - find matching category by name to get alias
       if (initialRecipe.recipe_category) {
-        setRecipeCategoryAlias(initialRecipe.recipe_category.name || "");
+        const recipeCategory = recipeCategories.find(rc => rc.name === initialRecipe.recipe_category?.name);
+        if (recipeCategory) {
+          setRecipeCategoryAlias(recipeCategory.alias);
+          setSelectedRecipeCategory(initialRecipe.recipe_category.name);
+        }
       }
 
       // Load cuisine - find matching cuisine by name to get alias
@@ -183,6 +192,7 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
       setSelectedCuisine("");
       setSelectedFoodCategory("");
       setSelectedFoodType("");
+      setSelectedRecipeCategory("");
       setFoodTypes([]);
     }
   }, [isOpen]);
@@ -240,6 +250,20 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
     } catch (error) {
       console.error("[RecipeUploadModal] Error fetching food categories:", error);
       toast.error("Failed to load food categories");
+    }
+  };
+
+  const fetchRecipeCategories = async () => {
+    try {
+      const response = await getRecipeCategories(token);
+      if (response.success && response.data) {
+        setRecipeCategories(response.data);
+      } else {
+        toast.error(response.message || "Failed to load recipe categories");
+      }
+    } catch (error) {
+      console.error("[RecipeUploadModal] Error fetching recipe categories:", error);
+      toast.error("Failed to load recipe categories");
     }
   };
 
@@ -304,6 +328,20 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
       console.log("[RecipeUploadModal] Selected food type:", foodType.name, "alias:", foodType.alias);
     } else {
       setFoodTypeAlias("");
+    }
+  };
+
+  const handleRecipeCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedRecipeCategoryName = e.target.value;
+    setSelectedRecipeCategory(selectedRecipeCategoryName);
+    
+    // Find the selected recipe category and set its alias
+    const recipeCategory = recipeCategories.find((rc) => rc.name === selectedRecipeCategoryName);
+    if (recipeCategory) {
+      setRecipeCategoryAlias(recipeCategory.alias);
+      console.log("[RecipeUploadModal] Selected recipe category:", recipeCategory.name, "alias:", recipeCategory.alias);
+    } else {
+      setRecipeCategoryAlias("");
     }
   };
 
@@ -779,15 +817,23 @@ export function RecipeUploadModal({ isOpen, onClose, token, onRecipeCreated, ini
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
-                      Recipe Category Alias
+                      Category
                     </label>
-                    <input
-                      type="text"
-                      value={recipeCategoryAlias}
-                      onChange={(e) => setRecipeCategoryAlias(e.target.value)}
-                      placeholder="e.g., proteins"
-                      className="w-full p-2.5 sm:p-3 text-sm sm:text-base border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none transition"
-                    />
+                    <select
+                      value={selectedRecipeCategory}
+                      onChange={handleRecipeCategoryChange}
+                      className="w-full p-2.5 sm:p-3 text-sm sm:text-base border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none transition bg-white"
+                    >
+                      <option value="">Select recipe category</option>
+                      {recipeCategories.map((category) => (
+                        <option key={category.id} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    {recipeCategoryAlias && (
+                      <p className="mt-1 text-xs text-gray-500">Alias: {recipeCategoryAlias}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
