@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 export default function BranchDropdown() {
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const branches = [
     "Main Branch",
@@ -11,10 +13,27 @@ export default function BranchDropdown() {
     "East Branch",
   ];
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   return (
     <div
+      ref={dropdownRef}
       className="relative inline-block text-left"
-      onBlur={() => setOpen(false)}
     >
       {/* Trigger Button */}
       <button
@@ -47,10 +66,14 @@ export default function BranchDropdown() {
                 {branch}
               </li>
             ))}
-            <li className="cursor-pointer px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 flex justify-start items-center gap-3">
+            <Link 
+              href="/branch-registration"
+              onClick={() => setOpen(false)}
+              className="cursor-pointer px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 flex justify-start items-center gap-3 block"
+            >
               Add Branch
               <img src="/plus-fill.svg" className="w-4" alt="" />
-            </li>
+            </Link>
           </ul>
         </div>
       )}

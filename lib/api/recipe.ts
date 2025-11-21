@@ -10,6 +10,9 @@ import type {
   RecipeResponse,
   CreateRecipeData,
   FoodType,
+  CreateReviewResponse,
+  GetReviewsResponse,
+  DeleteReviewResponse,
 } from "@/types/recipe";
 
 // Re-export FoodType for convenience
@@ -862,6 +865,120 @@ export async function toggleHideRecipe(
       console.error("[API:toggleHideRecipe] Error status:", err.response?.status);
     }
     const errorResponse = handleApiError<ToggleHideRecipeResponse>(err);
+    return errorResponse;
+  }
+}
+
+/**
+ * Create or update a review on a recipe
+ */
+export async function createOrUpdateReview(
+  recipeAlias: string,
+  content: string,
+  token: string
+): Promise<ApiResponse<CreateReviewResponse>> {
+  try {
+    const formData = new FormData();
+    formData.append("content", content);
+    formData.append("recipe_alias", recipeAlias);
+
+    const response = await axios.post<CreateReviewResponse>(
+      API_ENDPOINTS.RECIPE.CREATE_OR_UPDATE_REVIEW,
+      formData,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          // Content-Type will be set automatically by axios/browser with boundary
+        },
+      }
+    );
+
+    return {
+      success: response.data.status,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (err) {
+    console.error("[API:createOrUpdateReview] Error occurred:", err);
+    if (axios.isAxiosError(err)) {
+      console.error("[API:createOrUpdateReview] Error response:", err.response?.data);
+      console.error("[API:createOrUpdateReview] Error status:", err.response?.status);
+    }
+    const errorResponse = handleApiError<CreateReviewResponse>(err);
+    return errorResponse;
+  }
+}
+
+/**
+ * Get reviews for a recipe
+ */
+export async function getReviews(
+  recipeAlias: string,
+  token: string
+): Promise<ApiResponse<GetReviewsResponse>> {
+  try {
+    // Using GET with query parameters, following the same pattern as getComments
+    const response = await axios.get<GetReviewsResponse>(
+      `${API_ENDPOINTS.RECIPE.GET_REVIEW}?recipe_alias=${encodeURIComponent(recipeAlias)}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return {
+      success: response.data.status,
+      data: response.data,
+    };
+  } catch (err) {
+    console.error("[API:getReviews] Error occurred:", err);
+    if (axios.isAxiosError(err)) {
+      console.error("[API:getReviews] Error response:", err.response?.data);
+      console.error("[API:getReviews] Error status:", err.response?.status);
+    }
+    const errorResponse = handleApiError<GetReviewsResponse>(err);
+    return errorResponse;
+  }
+}
+
+/**
+ * Delete a review
+ */
+export async function deleteReview(
+  reviewAlias: string,
+  token: string
+): Promise<ApiResponse<DeleteReviewResponse>> {
+  try {
+    const response = await axios.delete<DeleteReviewResponse>(
+      API_ENDPOINTS.RECIPE.DELETE_REVIEW,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        data: {
+          review_alias: reviewAlias,
+        },
+      }
+    );
+
+    return {
+      success: response.data.status,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (err) {
+    console.error("[API:deleteReview] Error occurred:", err);
+    if (axios.isAxiosError(err)) {
+      console.error("[API:deleteReview] Error response:", err.response?.data);
+      console.error("[API:deleteReview] Error status:", err.response?.status);
+    }
+    const errorResponse = handleApiError<DeleteReviewResponse>(err);
     return errorResponse;
   }
 }

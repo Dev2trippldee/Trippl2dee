@@ -391,7 +391,7 @@ export function RecipeCard({ recipe, token, onRecipeUpdated, onRecipeHidden }: R
         >
           <div className="flex flex-row gap-2 items-center">
             <Utensils size={16} className="text-brand" />
-            <span className="truncate max-w-[120px]">{recipe.name}</span>
+            <span className="font-bold truncate max-w-[120px]">{recipe.name}</span>
           </div>
           <div className="flex flex-row gap-2 items-center">
             <ClockFading size={16} className="text-brand" />

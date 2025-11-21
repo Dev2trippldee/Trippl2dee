@@ -1,9 +1,10 @@
-"use client";
+ "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Smile, MapPin, Image as ImageIcon, X, Video } from "lucide-react";
+import { Shield, Image as ImageIcon, Video, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { UploadModal } from "./uploadModal";
+import { PrivacySelectModal } from "./privacySelectModal";
 import type { Post } from "@/types/post";
 
 interface PostFormProps {
@@ -12,11 +13,12 @@ interface PostFormProps {
 
 export function PostForm({ onPostCreated }: PostFormProps = {}) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isImageOnlyModal, setIsImageOnlyModal] = useState(false);
+  const [isVideoOnlyModal, setIsVideoOnlyModal] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [selectedPrivacy, setSelectedPrivacy] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const [content, setContent] = useState<string>("");
-  const [location, setLocation] = useState<string>(""); // Full location for backend
-  const [displayLocation, setDisplayLocation] = useState<string>(""); // First two words for display
-  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
@@ -49,82 +51,6 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
   }, []);
 
 
-  // Function to fetch location
-  const fetchLocation = async () => {
-    setIsFetchingLocation(true);
-    try {
-      if (navigator.geolocation) {
-        const options = {
-          enableHighAccuracy: true,
-          timeout: 15000, // 15 seconds timeout
-          maximumAge: 0 // Don't use cached position
-        };
-
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            try {
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-              );
-              const data = await response.json();
-              const locationName = data.display_name || `${latitude}, ${longitude}`;
-              // Store full location for backend
-              setLocation(locationName);
-              // Get first two words for display
-              const words = locationName.split(" ").slice(0, 2).join(" ");
-              setDisplayLocation(words);
-              toast.success("Location fetched successfully");
-            } catch (error) {
-              console.error("[PostForm] Geocoding failed:", error);
-              const locationName = `${latitude}, ${longitude}`;
-              // Store full location for backend
-              setLocation(locationName);
-              // Get first two words for display
-              const words = locationName.split(" ").slice(0, 2).join(" ");
-              setDisplayLocation(words);
-              toast.success("Location fetched (coordinates only)");
-            } finally {
-              setIsFetchingLocation(false);
-            }
-          },
-          (error) => {
-            console.error("[PostForm] Geolocation error:", error);
-            setIsFetchingLocation(false);
-            
-            let errorMessage = "Failed to get location.";
-            switch (error.code) {
-              case error.PERMISSION_DENIED:
-                errorMessage = "Location permission denied. Please enable location access in your browser settings.";
-                break;
-              case error.POSITION_UNAVAILABLE:
-                errorMessage = "Location information unavailable.";
-                break;
-              case error.TIMEOUT:
-                errorMessage = "Location request timed out. Please try again.";
-                break;
-              default:
-                errorMessage = "An unknown error occurred while fetching location.";
-                break;
-            }
-            toast.error(errorMessage);
-          },
-          options
-        );
-      } else {
-        toast.error("Geolocation is not supported by your browser");
-        setIsFetchingLocation(false);
-      }
-    } catch (error) {
-      console.error("[PostForm] Error fetching location:", error);
-      setIsFetchingLocation(false);
-      toast.error("An error occurred while fetching location");
-    }
-  };
-
-  // Note: Removed automatic location fetching on content change
-  // Mobile browsers require location requests to be triggered by direct user interaction
-  // Location will only be fetched when user explicitly clicks the "Location" button
 
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
@@ -153,11 +79,9 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
     setIsInputFocused(false);
   };
 
-  const handleRemoveLocation = () => {
-    console.log("[PostForm] Removing location");
-    setLocation("");
-    setDisplayLocation("");
-    toast.success("Location removed");
+  const handleImageModalOpen = () => {
+    setIsImageOnlyModal(true);
+    setIsUploadModalOpen(true);
   };
 
   const handleOpenModal = () => {
@@ -208,12 +132,29 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
     toast.success("Video removed");
   };
 
+  const handleVideoModalOpen = () => {
+    setIsVideoOnlyModal(true);
+    setIsUploadModalOpen(true);
+  };
+
+  const handlePrivacyModalOpen = () => {
+    setIsPrivacyModalOpen(true);
+  };
+
+  const handlePrivacySelected = (privacyAlias: string) => {
+    setSelectedPrivacy(privacyAlias);
+    setIsPrivacyModalOpen(false);
+    // Open upload modal after privacy is selected
+    setIsUploadModalOpen(true);
+  };
+
   const handleModalClose = () => {
     setIsUploadModalOpen(false);
-    // Reset content and location after modal closes
+    setIsImageOnlyModal(false);
+    setIsVideoOnlyModal(false);
+    setSelectedPrivacy("");
+    // Reset content after modal closes
     setContent("");
-    setLocation("");
-    setDisplayLocation("");
     // Reset files
     setSelectedImages([]);
     setSelectedVideos([]);
@@ -263,22 +204,6 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
             )}
           </div>
         </div>
-        
-        {/* Location Display */}
-        {displayLocation && (
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-1.5 bg-orange-50 rounded-lg border border-orange-200 min-w-0">
-            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-600 flex-shrink-0" />
-            <span className="text-xs sm:text-sm text-orange-700 font-medium flex-shrink-0">Location:</span>
-            <span className="text-xs sm:text-sm text-orange-600 truncate min-w-0 flex-1">{displayLocation}</span>
-            <button
-              onClick={handleRemoveLocation}
-              className="flex-shrink-0 p-0.5 sm:p-1 hover:bg-orange-200 rounded-full transition-colors group"
-              aria-label="Remove location"
-            >
-              <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-600 group-hover:text-orange-700" />
-            </button>
-          </div>
-        )}
 
         {/* Media Previews */}
         {(selectedImages.length > 0 || selectedVideos.length > 0) && (
@@ -322,20 +247,19 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
         )}
 
         <div className="flex justify-around border-t border-gray-500 pt-2.5 sm:pt-[18px] text-xs sm:text-sm text-gray-600 gap-1 sm:gap-0">
-          <button 
-            onClick={fetchLocation}
-            disabled={isFetchingLocation}
-            className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 hover:text-orange-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed px-1 sm:px-0 py-1 sm:py-0"
-          >
-            <MapPin size={18} className="sm:w-[18px] sm:h-[18px]" />
-            <span className="text-[10px] sm:text-xs">{isFetchingLocation ? "Fetching..." : "Location"}</span>
-          </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleImageModalOpen}
             className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 hover:text-orange-500 transition cursor-pointer px-1 sm:px-0 py-1 sm:py-0"
           >
             <ImageIcon size={18} className="sm:w-[18px] sm:h-[18px]" />
-            <span className="text-[10px] sm:text-xs">Photos/Videos</span>
+            <span className="text-[10px] sm:text-xs">Image</span>
+          </button>
+          <button
+            onClick={handleVideoModalOpen}
+            className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 hover:text-orange-500 transition cursor-pointer px-1 sm:px-0 py-1 sm:py-0"
+          >
+            <Video size={18} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="text-[10px] sm:text-xs">Videos</span>
           </button>
           <input
             ref={fileInputRef}
@@ -345,24 +269,38 @@ export function PostForm({ onPostCreated }: PostFormProps = {}) {
             onChange={handleFileSelect}
             className="hidden"
           />
-          <button className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 hover:text-orange-500 transition cursor-pointer px-1 sm:px-0 py-1 sm:py-0">
-            <Smile size={18} className="sm:w-[18px] sm:h-[18px]" />
-            <span className="text-[10px] sm:text-xs">Feelings/activity</span>
+          <button
+            onClick={handlePrivacyModalOpen}
+            className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 hover:text-orange-500 transition cursor-pointer px-1 sm:px-0 py-1 sm:py-0"
+          >
+            <Shield size={18} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="text-[10px] sm:text-xs">Privacy</span>
           </button>
         </div>
       </div>
 
       {token && (
-        <UploadModal
-          isOpen={isUploadModalOpen}
-          onClose={handleModalClose}
-          token={token}
-          onPostCreated={onPostCreated}
-          initialContent={content}
-          initialLocation={location}
-          initialImages={selectedImages}
-          initialVideos={selectedVideos}
-        />
+        <>
+          <UploadModal
+            isOpen={isUploadModalOpen}
+            onClose={handleModalClose}
+            token={token}
+            onPostCreated={onPostCreated}
+            initialContent={content}
+            initialLocation=""
+            initialImages={selectedImages}
+            initialVideos={selectedVideos}
+            imageOnly={isImageOnlyModal}
+            videoOnly={isVideoOnlyModal}
+            initialPrivacy={selectedPrivacy}
+          />
+          <PrivacySelectModal
+            isOpen={isPrivacyModalOpen}
+            onClose={() => setIsPrivacyModalOpen(false)}
+            token={token}
+            onPrivacySelected={handlePrivacySelected}
+          />
+        </>
       )}
     </>
   );

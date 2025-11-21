@@ -1,0 +1,11 @@
+{
+  "buildCommand": "git config user.email trippldee1@gmail.com && npm run build"
+}
+
+
+
+
+
+
+
+

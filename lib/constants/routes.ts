@@ -15,7 +15,7 @@ export const ROUTES = {
 
   // Protected routes
   HOME: "/home",
-  BRANCH_REG: "/branch-reg",
+  BRANCH_REG: "/branch-registration",
   POST_DETAIL: "/post/[alias]",
   RECIPE_DETAIL: "/recipe/[alias]",
 

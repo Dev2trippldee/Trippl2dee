@@ -157,3 +157,45 @@ export interface CreateRecipeData {
   recipe_alias?: string;
 }
 
+/**
+ * Recipe Review types
+ */
+export interface ReviewUser {
+  referral_code: string | null;
+  name: string | null;
+}
+
+export interface ReviewResponse {
+  id: number;
+  alias: string;
+  commentable_alias: string;
+  commentable_type: string;
+  parent_alias: string | null;
+  user: ReviewUser;
+  content: string;
+  replies: ReviewResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateReviewResponse {
+  status: boolean;
+  message: string;
+  data: ReviewResponse;
+  statusCode: number;
+}
+
+export interface GetReviewsResponse {
+  status: boolean;
+  data: ReviewResponse[];
+  totalComments: number;
+  topLevelcomments: number;
+  statusCode: number;
+}
+
+export interface DeleteReviewResponse {
+  status: boolean;
+  message: string;
+  statusCode: number;
+}
+

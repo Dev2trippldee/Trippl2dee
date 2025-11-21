@@ -1,5 +1,6 @@
 "use client";
 import { Pencil, MapPin } from "lucide-react";
+import Link from "next/link";
 
 export function BranchesList() {
   const branches = [
@@ -53,9 +54,12 @@ export function BranchesList() {
 
       {/* Add Branch Button */}
       <div className="flex justify-center mt-6 md:mt-10">
-        <button className="border border-brand text-brand font-medium rounded-2xl px-6 py-3 hover:bg-brand hover:text-white transition-colors text-[14px] md:text-[16px]">
+        <Link 
+          href="/branch-registration"
+          className="border border-brand text-brand font-medium rounded-2xl px-6 py-3 hover:bg-brand hover:text-white transition-colors text-[14px] md:text-[16px] inline-block"
+        >
           Add more Branch
-        </button>
+        </Link>
       </div>
     </div>
   );

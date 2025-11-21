@@ -2,7 +2,6 @@
 import {
   Checkbox,
   FileUpload,
-  Progress,
   RadioGroup,
   Switch,
 } from "@ark-ui/react";
@@ -293,24 +292,9 @@ export function BranchBussDetailsForm() {
 
   return (
     <div className="bg-brand-white flex-4 font-fira rounded-3xl overflow-clip ">
-      {/* Progress bar */}
-      <Progress.Root value={100} className="w-full">
-        {/*<Progress.Label>Label</Progress.Label>*/}
-        <Progress.Track className="rounded-2xl ">
-          <Progress.Range className="bg-teal-400 h-3" />
-        </Progress.Track>
-        <Progress.ValueText className="pl-[93%]" />
-      </Progress.Root>
-
       <div className="p-[30px] font-fira">
         <form action="" className="w-full space-y-[20px]">
-          {/*Header*/}
-          <div className="text-brand flex justify-start gap-3 items-center pb-[10px]">
-            <MapPinned className="w-[36px]" />
-            <h3 className="font-inter text-[28px] font-semibold">
-              Business Details
-            </h3>
-          </div>
+       
           {/*UPI*/}
           <div className="flex flex-col gap-[15px] font-fira">
             <label htmlFor="upi-id" className="text-[18px]">
@@ -788,14 +772,14 @@ export function BranchBussDetailsForm() {
           </div>
 
           {/* Buttons */}
-          <div className="font-inter text-[14px] flex justify-end pt-5">
+          {/* <div className="font-inter text-[14px] flex justify-end pt-5">
             <button
               type="submit"
               className="bg-brand text-brand-white py-[16px] px-[35px] rounded-2xl border border-gray-200 hover:bg-orange-300 cursor-pointer"
             >
               Register Branch
             </button>
-          </div>
+          </div> */}
           {/**/}
         </form>
       </div>

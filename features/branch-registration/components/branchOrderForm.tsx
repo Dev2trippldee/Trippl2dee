@@ -12,7 +12,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
-import { BranchRegFormProps } from "@/app/branch-reg/page";
+import { BranchRegFormProps } from "@/app/branch-registration/page";
 
 export function BranchOrderForm({ setStep }: BranchRegFormProps) {
   const items = [

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Navbar } from "@/features/home/components/navbar";
 import { BranchesList } from "./components/branchesList";
 import { BranchInformationForm } from "./components/branchInformationForm";
@@ -15,6 +17,7 @@ export type BranchRegFormProps = {
 };
 
 export default function BranchRegPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FormStep>("branch-info");
   const [branchInfoData, setBranchInfoData] = useState<any>(null);
   const [documentsData, setDocumentsData] = useState<any>(null);
@@ -53,8 +56,12 @@ export default function BranchRegPage() {
       orderDetails: orderDetailsData,
       businessDetails: data,
     });
-    // You can add navigation or success message here
-    alert("Registration completed successfully!");
+    // Show success toast notification
+    toast.success("Registration completed successfully!");
+    // Redirect to home page after successful registration
+    setTimeout(() => {
+      router.push("/home");
+    }, 1500);
   };
 
   const handlePrevious = () => {
@@ -88,16 +95,19 @@ export default function BranchRegPage() {
               <DocumentsForm 
                 onPrevious={handlePrevious} 
                 onSave={handleDocumentsSave}
+                eateryAlias={branchInfoData?.alias || ""}
               />
             ) : currentStep === "order-details" ? (
               <OrderDetailsForm 
                 onPrevious={handlePrevious} 
                 onSave={handleOrderDetailsSave}
+                eateryAlias={documentsData?.alias || branchInfoData?.alias || ""}
               />
             ) : (
               <BusinessDetailsForm 
                 onPrevious={handlePrevious} 
                 onSave={handleBusinessDetailsSave}
+                eateryAlias={orderDetailsData?.alias || documentsData?.alias || branchInfoData?.alias || ""}
               />
             )}
           </div>

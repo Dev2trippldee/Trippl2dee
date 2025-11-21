@@ -1,5 +1,6 @@
 "use client";
 import { Pencil } from "lucide-react";
+import Link from "next/link";
 
 export function BranchesList() {
   const branches = [
@@ -54,9 +55,12 @@ export function BranchesList() {
 
       {/* Add Branch Button - Orange border, white background */}
       <div className="flex justify-center">
-        <button className="border-2 border-brand bg-white text-gray-900 font-medium rounded-xl px-5 py-2 hover:bg-brand-bg-100 transition-colors text-[11px] md:text-[13px]">
+        <Link 
+          href="/branch-registration"
+          className="border-2 border-brand bg-white text-gray-900 font-medium rounded-xl px-5 py-2 hover:bg-brand-bg-100 transition-colors text-[11px] md:text-[13px] inline-block text-center"
+        >
           Add more Branch
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -148,7 +148,7 @@ export default function HomeLayout({
               <div className="w-full font-fira space-y-[16px]">
                 <div className="text-brand flex justify-between items-center">
                   <span className="text-[18px]">Recipes</span>
-                  <span className="font-inter text-[10px]">View all</span>
+                  <span className="font-inter text-[10px] mr-2">View all</span>
                 </div>
                 <button
                   onClick={() => router.push("/upload-recipe")}

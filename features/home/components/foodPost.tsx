@@ -119,6 +119,20 @@ function VideoJsPlayer({ src }: VideoJsPlayerProps) {
           playerRef.current.ready(() => {
             if (!playerRef.current) return;
             
+            // Set max-height constraint for tall videos
+            const playerEl = playerRef.current.el();
+            if (playerEl && playerEl instanceof HTMLElement) {
+              playerEl.style.maxHeight = '600px';
+              const tech = playerRef.current.tech();
+              if (tech && tech.el()) {
+                const techEl = tech.el();
+                if (techEl && techEl instanceof HTMLElement) {
+                  techEl.style.maxHeight = '600px';
+                  techEl.style.objectFit = 'contain';
+                }
+              }
+            }
+            
             // Register player with video manager
             const playerControl = {
               pause: () => {
@@ -309,13 +323,13 @@ function VideoJsPlayer({ src }: VideoJsPlayerProps) {
   // Fallback to native HTML5 video player
   if (useNativePlayer) {
     return (
-      <div ref={containerRef} className="w-full h-full">
+      <div ref={containerRef} className="w-full max-h-[600px] flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
         <video 
           ref={videoRef}
           controls
           playsInline
           preload="metadata"
-          className="w-full h-auto max-h-[600px] rounded-lg"
+          className="max-w-full max-h-[600px] w-auto h-auto object-contain rounded-lg"
           onError={(e) => {
             const video = e.currentTarget;
             const error = video.error;
@@ -341,12 +355,13 @@ function VideoJsPlayer({ src }: VideoJsPlayerProps) {
   }
 
   return (
-    <div ref={containerRef} data-vjs-player className="w-full h-full">
+    <div ref={containerRef} data-vjs-player className="w-full">
       <video 
         ref={videoRef} 
         className="video-js vjs-big-play-centered"
         playsInline
         preload="metadata"
+        style={{ maxHeight: '600px' }}
       >
         <p className="vjs-no-js">
           To view this video please enable JavaScript, and consider upgrading to a web browser that
@@ -928,6 +943,72 @@ export function FoodPost({ post, token, onPostDeleted }: FoodPostProps) {
   const hasVideos = post.videos && post.videos.length > 0;
   const displayImage = hasImages ? post.images[0] : null;
   const displayVideo = hasVideos ? post.videos[0] : null;
+  const hasBothMedia = displayImage && displayVideo;
+  const totalSlides = hasBothMedia ? 2 : (displayImage || displayVideo ? 1 : 0);
+
+  // Swipe state
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [mouseStart, setMouseStart] = useState<number | null>(null);
+  const [mouseEnd, setMouseEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Swipe handlers
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < totalSlides - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+    if (isRightSwipe && currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+  };
+
+  // Mouse drag handlers for desktop
+  const onMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setMouseEnd(null);
+    setMouseStart(e.clientX);
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setMouseEnd(e.clientX);
+  };
+
+  const onMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (!mouseStart || !mouseEnd) return;
+    const distance = mouseStart - mouseEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < totalSlides - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+    if (isRightSwipe && currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+    setMouseStart(null);
+    setMouseEnd(null);
+  };
 
   return (
     <div className="max-full mx-auto bg-white rounded-3xl shadow-sm border border-gray-200 ring-1 ring-brand">
@@ -942,7 +1023,6 @@ export function FoodPost({ post, token, onPostDeleted }: FoodPostProps) {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-900">{post.user_name || "User"}</span>
-              <img src={"/green-verified.svg"} alt="green-verified" />
               <span className="px-2 py-0.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-full border border-orange-200">
                 {post.privacy.name}
               </span>
@@ -1051,93 +1131,135 @@ export function FoodPost({ post, token, onPostDeleted }: FoodPostProps) {
         </div>
       )}
 
-      {/* Images */}
-      {displayImage && displayImage.url && (
-        <div className="w-full relative px-4 pb-3">
-          {imageLoading && (
-            <div className="w-full h-[200px] flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="flex flex-col items-center gap-3">
-                <svg
-                  className="animate-spin h-12 w-12 text-orange-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-            </div>
-          )}
-          {!imageLoading && (
-            <img
-              src={displayImage.url}
-              alt="Post image"
-              className={`w-full h-auto max-h-[600px] object-contain rounded-lg transition-opacity duration-[6000ms] ${
-                imageVisible ? 'opacity-100' : 'opacity-0'
-              }`}
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.style.display = "none";
-                // Show error placeholder
-                const placeholder = document.createElement("div");
-                placeholder.className = "w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500";
-                placeholder.textContent = "Failed to load image";
-                target.parentElement?.appendChild(placeholder);
-              }}
-              onLoad={() => {}}
-              loading="lazy"
-            />
-          )}
-        </div>
-      )}
-
-      {/* Video Player */}
-      {displayVideo && displayVideo.url && (
+      {/* MEDIA - Swipeable if both image and video exist */}
+      {((displayImage && displayImage.url) || (displayVideo && displayVideo.url)) && (
         <div className="w-full px-4 pb-3">
-          <div className="w-full h-auto max-h-[600px] relative">
-            {videoLoading && (
-              <div className="w-full h-[200px] flex items-center justify-center bg-gray-50 rounded-lg">
-                <div className="flex flex-col items-center gap-3">
-                  <svg
-                    className="animate-spin h-12 w-12 text-orange-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+          <div
+            className="relative overflow-hidden rounded-lg"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            style={{ cursor: isDragging ? 'grabbing' : hasBothMedia ? 'grab' : 'default' }}
+          >
+            <div
+              className="flex transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateX(-${currentSlide * 100}%)`,
+              }}
+            >
+              {/* Image Slide */}
+              {displayImage && displayImage.url && (
+                <div className="w-full flex-shrink-0 relative">
+                  {imageLoading && (
+                    <div className="w-full h-[200px] flex items-center justify-center bg-gray-50 rounded-lg">
+                      <div className="flex flex-col items-center gap-3">
+                        <svg
+                          className="animate-spin h-12 w-12 text-orange-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                  {!imageLoading && (
+                    <div className="w-full max-h-[600px] flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
+                      <img
+                        src={displayImage.url}
+                        alt="Post image"
+                        className={`max-w-full max-h-[600px] w-auto h-auto object-contain rounded-lg transition-opacity duration-[6000ms] ${
+                          imageVisible ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = "none";
+                          const placeholder = document.createElement("div");
+                          placeholder.className = "w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500";
+                          placeholder.textContent = "Failed to load image";
+                          target.parentElement?.appendChild(placeholder);
+                        }}
+                        onLoad={() => {}}
+                        loading="lazy"
+                        draggable={false}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-            {!videoLoading && (
-              <div className={`transition-opacity duration-[6000ms] ${
-                videoVisible ? 'opacity-100' : 'opacity-0'
-              }`}>
-                <VideoJsPlayer src={displayVideo.url} />
+              )}
+
+              {/* Video Slide */}
+              {displayVideo && displayVideo.url && (
+                <div className="w-full flex-shrink-0 relative">
+                  {videoLoading && (
+                    <div className="w-full h-[200px] flex items-center justify-center bg-gray-50 rounded-lg">
+                      <div className="flex flex-col items-center gap-3">
+                        <svg
+                          className="animate-spin h-12 w-12 text-orange-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                  {!videoLoading && (
+                    <div className={`w-full transition-opacity duration-[6000ms] ${
+                      videoVisible ? 'opacity-100' : 'opacity-0'
+                    }`}>
+                      <VideoJsPlayer src={displayVideo.url} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Slide Indicators */}
+            {hasBothMedia && totalSlides > 1 && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-10">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      currentSlide === index
+                        ? 'w-6 bg-white'
+                        : 'w-1.5 bg-white/50'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
               </div>
             )}
           </div>

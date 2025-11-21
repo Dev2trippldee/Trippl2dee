@@ -3,7 +3,7 @@ import { Progress } from "@ark-ui/react";
 import { MapPinPlus } from "lucide-react";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
-import { BranchRegFormProps } from "@/app/branch-reg/page";
+import { BranchRegFormProps } from "@/app/branch-registration/page";
 
 export function BranchRegForm({ setStep }: BranchRegFormProps) {
   return (

@@ -57,6 +57,18 @@ export const API_ENDPOINTS = {
     GET_LIKES_COUNT: `${API_BASE}/recipe/get-likes-count`,
     SHARE: `${API_BASE}/recipe/share`,
     TOGGLE_HIDE: `${API_BASE}/recipe/toggle-hide`,
+    CREATE_OR_UPDATE_REVIEW: `${API_BASE}/recipe/create-or-update/review`,
+    GET_REVIEW: `${API_BASE}/recipe/get-review`,
+    DELETE_REVIEW: `${API_BASE}/recipe/delete/review`,
+  },
+  EATERY: {
+    CREATE_OR_UPDATE: `${API_BASE}/eatery/create-or-update`,
+    VALIDATE_OTP: `${API_BASE}/eatery/validate-otp`,
+    GET_AMENITIES: `${API_BASE}/get-amenities`,
+    GET_WORKING_DAYS: `${API_BASE}/get-working-days`,
+  },
+  ACCOUNT: {
+    GET_ORG_TYPES: `${API_BASE}/account-org-types`,
   },
 } as const;
 

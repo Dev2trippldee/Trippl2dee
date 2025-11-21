@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "git config user.email trippldee1@gmail.com && next build",
     "start": "next start",
     "lint": "eslint"
   },

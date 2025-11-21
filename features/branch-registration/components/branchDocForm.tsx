@@ -1,7 +1,7 @@
 "use client";
 import { FileUpload, Progress } from "@ark-ui/react";
 import { FileText, Upload } from "lucide-react";
-import { BranchRegFormProps } from "@/app/branch-reg/page";
+import { BranchRegFormProps } from "@/app/branch-registration/page";
 
 export function BranchDocForm({ setStep }: BranchRegFormProps) {
   return (

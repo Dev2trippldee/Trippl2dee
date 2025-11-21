@@ -3,7 +3,6 @@
  */
 
 import axios from "axios";
-import { env } from "../config/env";
 import { API_ENDPOINTS } from "../constants/api";
 import { handleApiError } from "./client";
 import type { ApiResponse } from "@/types/auth";

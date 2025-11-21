@@ -96,6 +96,20 @@ function VideoJsPlayer({ src }: { src: string }) {
           playerRef.current.ready(() => {
             if (!playerRef.current) return;
             
+            // Set max-height constraint for tall videos
+            const playerEl = playerRef.current.el();
+            if (playerEl && playerEl instanceof HTMLElement) {
+              playerEl.style.maxHeight = '600px';
+              const tech = playerRef.current.tech();
+              if (tech && tech.el()) {
+                const techEl = tech.el();
+                if (techEl && techEl instanceof HTMLElement) {
+                  techEl.style.maxHeight = '600px';
+                  techEl.style.objectFit = 'contain';
+                }
+              }
+            }
+            
             const playerControl = {
               pause: () =>
                 playerRef.current && !playerRef.current.paused()
@@ -155,13 +169,13 @@ function VideoJsPlayer({ src }: { src: string }) {
 
   if (useNativePlayer)
     return (
-      <div ref={containerRef}>
+      <div ref={containerRef} className="w-full max-h-[600px] flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
         <video
           ref={videoRef}
           controls
           playsInline
           preload="metadata"
-          className="w-full h-auto max-h-[600px] rounded-lg"
+          className="max-w-full max-h-[600px] w-auto h-auto object-contain rounded-lg"
         >
           <source src={src} type="video/mp4" />
         </video>
@@ -175,6 +189,7 @@ function VideoJsPlayer({ src }: { src: string }) {
         className="video-js vjs-big-play-centered"
         playsInline
         preload="metadata"
+        style={{ maxHeight: '600px' }}
       ></video>
       {error && (
         <div className="text-center text-sm text-red-500 mt-2">{error}</div>
@@ -191,6 +206,12 @@ export function FoodPost({ post }: { post: Post }) {
   const [timeAgoText, setTimeAgoText] = useState("");
   const [isLiking, setIsLiking] = useState(false);
   const [token, setToken] = useState<string>("");
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [mouseStart, setMouseStart] = useState<number | null>(null);
+  const [mouseEnd, setMouseEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleLike = async () => {
     if (!post.alias) {
@@ -272,6 +293,64 @@ export function FoodPost({ post }: { post: Post }) {
   const hasContent = !!post.content?.trim();
   const displayImage = post.images?.[0] || null;
   const displayVideo = post.videos?.[0] || null;
+  const hasBothMedia = displayImage && displayVideo;
+  const totalSlides = hasBothMedia ? 2 : (displayImage || displayVideo ? 1 : 0);
+
+  // Swipe handlers
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < totalSlides - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+    if (isRightSwipe && currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+  };
+
+  // Mouse drag handlers for desktop
+  const onMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setMouseEnd(null);
+    setMouseStart(e.clientX);
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setMouseEnd(e.clientX);
+  };
+
+  const onMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (!mouseStart || !mouseEnd) return;
+    const distance = mouseStart - mouseEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < totalSlides - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+    if (isRightSwipe && currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+    setMouseStart(null);
+    setMouseEnd(null);
+  };
 
   return (
     <div className="max-full mx-auto bg-white rounded-3xl shadow-sm border border-gray-200 ring-1 ring-brand">
@@ -291,8 +370,6 @@ export function FoodPost({ post }: { post: Post }) {
               <span className="font-semibold text-gray-900 text-[9px] truncate max-w-[60px]">
                 {post.user_name}
               </span>
-
-              <img src="/green-verified.svg" className="w-2 h-2" />
 
               <span className="text-[7px] text-gray-500 truncate max-w-[50px]">
                 {post.user_referral_code}
@@ -337,20 +414,65 @@ export function FoodPost({ post }: { post: Post }) {
         </div>
       )}
 
-      {/* IMAGE */}
-      {displayImage && (
+      {/* MEDIA - Swipeable if both image and video exist */}
+      {(displayImage || displayVideo) && (
         <div className="px-4 pb-3">
-          <img
-            src={displayImage.url}
-            className="w-full h-auto max-h-[600px] rounded-lg object-contain"
-          />
-        </div>
-      )}
+          <div
+            className="relative overflow-hidden rounded-lg"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            style={{ cursor: isDragging ? 'grabbing' : hasBothMedia ? 'grab' : 'default' }}
+          >
+            <div
+              className="flex transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateX(-${currentSlide * 100}%)`,
+              }}
+            >
+              {/* Image Slide */}
+              {displayImage && (
+                <div className="w-full flex-shrink-0">
+                  <div className="w-full max-h-[600px] flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
+                    <img
+                      src={displayImage.url}
+                      className="max-w-full max-h-[600px] w-auto h-auto object-contain rounded-lg"
+                      draggable={false}
+                    />
+                  </div>
+                </div>
+              )}
 
-      {/* VIDEO */}
-      {displayVideo && (
-        <div className="px-4 pb-3">
-          <VideoJsPlayer src={displayVideo.url} />
+              {/* Video Slide */}
+              {displayVideo && (
+                <div className="w-full flex-shrink-0">
+                  <VideoJsPlayer src={displayVideo.url} />
+                </div>
+              )}
+            </div>
+
+            {/* Slide Indicators */}
+            {hasBothMedia && totalSlides > 1 && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-10">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      currentSlide === index
+                        ? 'w-6 bg-white'
+                        : 'w-1.5 bg-white/50'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

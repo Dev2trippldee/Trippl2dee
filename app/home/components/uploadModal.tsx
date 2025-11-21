@@ -16,11 +16,14 @@ interface UploadModalProps {
   initialLocation?: string;
   initialImages?: File[];
   initialVideos?: File[];
+  imageOnly?: boolean;
+  videoOnly?: boolean;
+  initialPrivacy?: string;
 }
 
 type Step = "select" | "review" | "post";
 
-export function UploadModal({ isOpen, onClose, token, onPostCreated, initialContent = "", initialLocation = "", initialImages = [], initialVideos = [] }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, token, onPostCreated, initialContent = "", initialLocation = "", initialImages = [], initialVideos = [], imageOnly = false, videoOnly = false, initialPrivacy = "" }: UploadModalProps) {
   console.log("[UploadModal] Component rendered, isOpen:", isOpen, "token exists:", !!token);
   
   const [currentStep, setCurrentStep] = useState<Step>("select");
@@ -81,7 +84,10 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
       };
       reader.readAsDataURL(initialVideos[0]);
     }
-  }, [isOpen, initialContent, initialLocation, initialImages, initialVideos]);
+    if (isOpen && initialPrivacy) {
+      setSelectedPrivacy(initialPrivacy);
+    }
+  }, [isOpen, initialContent, initialLocation, initialImages, initialVideos, initialPrivacy]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -174,13 +180,18 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
       if (response.success && response.data) {
         console.log("[UploadModal] Privacy options loaded successfully:", response.data);
         setPrivacyOptions(response.data);
-        // Set default privacy to "public" if available
-        const publicOption = response.data.find((opt) => opt.alias === "public");
-        if (publicOption) {
-          console.log("[UploadModal] Setting default privacy to:", publicOption.alias);
-          setSelectedPrivacy(publicOption.alias);
+        // Set default privacy to "public" if available and no initialPrivacy is provided
+        if (!initialPrivacy) {
+          const publicOption = response.data.find((opt) => opt.alias === "public");
+          if (publicOption) {
+            console.log("[UploadModal] Setting default privacy to:", publicOption.alias);
+            setSelectedPrivacy(publicOption.alias);
+          } else {
+            console.warn("[UploadModal] No 'public' privacy option found");
+          }
         } else {
-          console.warn("[UploadModal] No 'public' privacy option found");
+          // Use initialPrivacy if provided
+          setSelectedPrivacy(initialPrivacy);
         }
       } else {
         console.error("[UploadModal] Failed to load privacy options:", response.message);
@@ -204,6 +215,11 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
       });
       
       if (file.type.startsWith("image/")) {
+        if (videoOnly) {
+          console.warn("[UploadModal] Image file rejected in video-only mode");
+          toast.error("Only video files are allowed");
+          return;
+        }
         setSelectedFile(file);
         setFileType("image");
         setSelectedImage(file);
@@ -220,6 +236,11 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
         };
         reader.readAsDataURL(file);
       } else if (file.type.startsWith("video/")) {
+        if (imageOnly) {
+          console.warn("[UploadModal] Video file rejected in image-only mode");
+          toast.error("Only image files are allowed");
+          return;
+        }
         setSelectedFile(file);
         setFileType("video");
         setSelectedVideo(file);
@@ -237,7 +258,13 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
         reader.readAsDataURL(file);
       } else {
         console.warn("[UploadModal] Invalid file type selected:", file.type);
-        toast.error("Please select a valid image or video file");
+        if (imageOnly) {
+          toast.error("Please select a valid image file");
+        } else if (videoOnly) {
+          toast.error("Please select a valid video file");
+        } else {
+          toast.error("Please select a valid image or video file");
+        }
       }
     } else {
       console.log("[UploadModal] No file selected");
@@ -346,10 +373,16 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
         contentLength: content.trim().length
       });
       
-      // Content is mandatory - user must add content to proceed
+      // Content is mandatory - user must add at least 140 characters
+      const contentLength = content.trim().length;
       if (!content || !content.trim()) {
         console.warn("[UploadModal] Validation failed: Content is required");
-        toast.error("Please add content to your post");
+        toast.error("Please add a caption to your post");
+        return;
+      }
+      if (contentLength < 140) {
+        console.warn("[UploadModal] Validation failed: Content must be at least 140 characters");
+        toast.error(`Caption must be at least 140 characters (currently ${contentLength})`);
         return;
       }
       
@@ -391,10 +424,16 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
   const handleSubmit = async () => {
     console.log("[UploadModal] handleSubmit - Starting post submission...");
     
-    // Content is mandatory
+    // Content is mandatory - must be at least 140 characters
+    const contentLength = content.trim().length;
     if (!content || !content.trim()) {
       console.warn("[UploadModal] Validation failed: Content is required");
-      toast.error("Please add content to your post");
+      toast.error("Please add a caption to your post");
+      return;
+    }
+    if (contentLength < 140) {
+      console.warn("[UploadModal] Validation failed: Content must be at least 140 characters");
+      toast.error(`Caption must be at least 140 characters (currently ${contentLength})`);
       return;
     }
     
@@ -649,16 +688,20 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
                   {!selectedFile ? (
                     <>
                       <div className="flex justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-                        <ImageIcon className="text-gray-400 group-hover:text-orange-500 transition w-8 h-8 sm:w-12 sm:h-12" />
-                        <Video className="text-gray-400 group-hover:text-orange-500 transition w-8 h-8 sm:w-12 sm:h-12" />
+                        {!videoOnly && (
+                          <ImageIcon className="text-gray-400 group-hover:text-orange-500 transition w-8 h-8 sm:w-12 sm:h-12" />
+                        )}
+                        {!imageOnly && (
+                          <Video className="text-gray-400 group-hover:text-orange-500 transition w-8 h-8 sm:w-12 sm:h-12" />
+                        )}
                       </div>
                       <p className="text-gray-700 mb-2 sm:mb-3 font-semibold text-base sm:text-lg">
-                        Upload Photo or Video
+                        {imageOnly ? "Upload Photo" : videoOnly ? "Upload Video" : "Upload Photo or Video"}
                       </p>
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*,video/*"
+                        accept={imageOnly ? "image/*" : videoOnly ? "video/*" : "image/*,video/*"}
                         onChange={handleFileSelect}
                         className="hidden"
                       />
@@ -669,7 +712,7 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
                         Select from computer
                       </button>
                       <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-500">
-                        Supports images and videos
+                        {imageOnly ? "Supports image files only" : videoOnly ? "Supports video files only" : "Supports images and videos"}
                       </p>
                     </>
                   ) : (
@@ -755,11 +798,20 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
 
                 {/* Content Text Area - Modern Style */}
                 <div className="border-2 border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 hover:border-orange-300 transition">
-                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                    <FileText className="text-orange-500" size={18} />
-                    <label className="block text-gray-800 text-sm sm:text-base font-semibold">
-                      Add a caption <span className="text-red-500">*</span>
-                    </label>
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="text-orange-500" size={18} />
+                      <label className="block text-gray-800 text-sm sm:text-base font-semibold">
+                        Add a caption <span className="text-red-500">*</span>
+                      </label>
+                    </div>
+                    <span className={`text-xs sm:text-sm font-medium ${
+                      content.trim().length < 140 
+                        ? "text-red-500" 
+                        : "text-gray-500"
+                    }`}>
+                      {content.trim().length}/140
+                    </span>
                   </div>
                   <textarea
                     value={content}
@@ -767,15 +819,20 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
                       console.log("[UploadModal] Content changed, length:", e.target.value.length);
                       setContent(e.target.value);
                     }}
-                    placeholder="Write something... (Required)"
+                    placeholder="Write something... (Minimum 140 characters required)"
                     required
                     className={`w-full p-3 sm:p-4 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none transition ${
-                      !content || !content.trim() 
+                      !content || !content.trim() || content.trim().length < 140
                         ? "border-red-300 focus:border-red-500" 
                         : "border-gray-200 focus:border-orange-500"
                     }`}
                     rows={4}
                   />
+                  {content.trim().length > 0 && content.trim().length < 140 && (
+                    <p className="mt-2 text-xs sm:text-sm text-red-500">
+                      Please add at least {140 - content.trim().length} more characters
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1085,9 +1142,9 @@ export function UploadModal({ isOpen, onClose, token, onPostCreated, initialCont
           ) : (
             <button
               onClick={handleNext}
-              disabled={currentStep === "select" && (!content || !content.trim())}
+              disabled={currentStep === "select" && (!content || !content.trim() || content.trim().length < 140)}
               className={`px-6 sm:px-8 py-2 sm:py-2.5 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl transition shadow-sm hover:shadow-md ${
-                currentStep === "select" && (!content || !content.trim())
+                currentStep === "select" && (!content || !content.trim() || content.trim().length < 140)
                   ? "bg-gray-400 text-white cursor-not-allowed"
                   : "bg-orange-500 text-white hover:bg-orange-600"
               }`}
